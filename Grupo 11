@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrera de Caballos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .panel {
+            background-color: rgb(255, 255, 255);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .datos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .dato-card {
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .valor {
+            font-size: 24px;
+            font-weight: bold;
+            color: #000000;
+        }
+        .etiqueta {
+            color: #000000;
+            font-size: 14px;
+        }
+        button {
+            background-color: #000000;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        #mensaje {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <h1>Carrera de Caballos</h1>
+        <div class="datos">
+            <div class="dato-card">
+                <div class="valor" id="puntos">0</div>
+                <div class="etiqueta">Puntos actuales</div>
+            </div>
+            <div class="dato-card">
+                <div class="valor" id="tiempo">0:00</div>
+                <div class="etiqueta">Tiempo</div>
+            </div>
+            <div class="dato-card">
+                <div class="valor" id="maximoPuntaje">0</div>
+                <div class="etiqueta">Máximo puntaje</div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <button id="btnIniciar" onclick="iniciarCarrera()">Iniciar Carrera</button>
+            <button id="btnFinalizar" onclick="finalizarCarrera()" disabled>Finalizar Carrera</button>
+        </div>
+        <div id="mensaje"></div>
+    </div>
+
+    <script>
+        let actualizadorDatos;
+        
+        function actualizarDatos() {
+            fetch('/datos')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('puntos').textContent = data.puntos;
+                    document.getElementById('maximoPuntaje').textContent = data.maximoPuntaje;
+                    
+                    const minutos = Math.floor(data.tiempo / 60);
+                    const segundos = data.tiempo % 60;
+                    document.getElementById('tiempo').textContent = 
+                        `${minutos}:${segundos.toString().padStart(2, '0')}`;
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function iniciarCarrera() {
+            fetch('/iniciar', { method: 'POST' })
+                .then(response => {
+                    if (response.ok) {
+                        document.getElementById('btnIniciar').disabled = true;
+                        document.getElementById('btnFinalizar').disabled = false;
+                        actualizadorDatos = setInterval(actualizarDatos, 1000);
+                        mostrarMensaje('¡Carrera iniciada!', 'success');
+                    }
+                });
+        }
+
+        function finalizarCarrera() {
+            fetch('/finalizar', { method: 'POST' })
+                .then(response => {
+                    if (response.ok) {
+                        document.getElementById('btnIniciar').disabled = false;
+                        document.getElementById('btnFinalizar').disabled = true;
+                        clearInterval(actualizadorDatos);
+                        actualizarDatos();
+                        mostrarMensaje('Carrera finalizada', 'success');
+                    }
+                });
+        }
+
+        function mostrarMensaje(texto, tipo) {
+            const mensaje = document.getElementById('mensaje');
+            mensaje.textContent = texto;
+            mensaje.className = tipo;
+            mensaje.style.display = 'block';
+            setTimeout(() => {
+                mensaje.style.display = 'none';
+            }, 3000);
+        }
+
+        // Actualizar datos iniciales
+        actualizarDatos();
+    </script>
+</body>
+</html>
